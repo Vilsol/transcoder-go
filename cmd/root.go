@@ -84,7 +84,7 @@ var rootCmd = &cobra.Command{
 			}
 
 			lastDot := strings.LastIndex(fileName, ".")
-			extCorrectedOriginal := fileName[:lastDot] + ".mp4"
+			extCorrectedOriginal := fileName[:lastDot] + ".mkv"
 
 			processedFileName := filepath.Dir(extCorrectedOriginal) + "/." + filepath.Base(extCorrectedOriginal) + ".processed"
 

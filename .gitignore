@@ -114,3 +114,4 @@ modules.xml
 *.mkv
 *.mp4
 *.flv
+*.processed

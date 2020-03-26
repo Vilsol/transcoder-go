@@ -30,7 +30,7 @@ func BuildFlags(fileName string, tempFileName string, metadata *models.FileMetad
 	}
 
 	// Mandatory flags
-	finalFlags = append(finalFlags, "-c", "copy", "-f", "mp4", "-progress", "-")
+	finalFlags = append(finalFlags, "-c", "copy", "-f", "matroska", "-progress", "-")
 
 	// Configurable flags
 	finalFlags = append(finalFlags, strings.Split(viper.GetString("flags"), " ")...)
