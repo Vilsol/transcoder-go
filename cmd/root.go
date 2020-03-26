@@ -228,7 +228,7 @@ func init() {
 	rootCmd.PersistentFlags().StringSliceP("extensions", "e", []string{".mp4", ".mkv", ".flv"}, "Transcoded file extensions")
 	rootCmd.PersistentFlags().Int("interval", 5, "How often to output transcoding status")
 	rootCmd.PersistentFlags().Bool("stderr", false, "Whether to output ffmpeg stderr stream")
-	rootCmd.PersistentFlags().Bool("keep-old", false, "Keep old version of video if transcoded version is larger")
+	rootCmd.PersistentFlags().Bool("keep-old", true, "Keep old version of video if transcoded version is larger")
 	rootCmd.PersistentFlags().Bool("early-exit", true, "Early exit if transcoded version is larger than original (requires keep-old)")
 
 	rootCmd.PersistentFlags().String("tg-bot-key", "", "Telegram Bot API Key")
