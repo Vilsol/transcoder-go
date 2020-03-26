@@ -1,0 +1,6 @@
+Dockerfile
+docker-compose.yml
+docker-compose-dev.yml
+**/*.mkv
+**/*.mp4
+**/*.flv
