@@ -51,6 +51,9 @@ func BuildFlags(fileName string, tempFileName string, metadata *models.FileMetad
 				if stream.ColorTransfer != nil {
 					finalFlags = append(finalFlags, "-color_trc", *stream.ColorTransfer)
 				}
+				if stream.PixelFormat != nil {
+					finalFlags = append(finalFlags, "-pix_fmt", *stream.PixelFormat)
+				}
 				break
 			}
 		}
