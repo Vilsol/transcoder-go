@@ -170,7 +170,7 @@ func ReadError(pipe io.ReadCloser) {
 	}
 }
 
-var flatParseRegex = regexp.MustCompile("\\s*([0-9.]+).*")
+var flatParseRegex = regexp.MustCompile("\\s*(-?[0-9.]+).*")
 
 func OutputToReport(lines []string) *models.ProgressReport {
 	report := models.ProgressReport{}
@@ -193,7 +193,9 @@ func OutputToReport(lines []string) *models.ProgressReport {
 			break
 		case "speed":
 			matches := flatParseRegex.FindAllStringSubmatch(split[1], -1)
-			report.Speed, _ = strconv.ParseFloat(matches[0][1], 64)
+			if len(matches) > 0 {
+				report.Speed, _ = strconv.ParseFloat(matches[0][1], 64)
+			}
 			break
 		case "progress":
 			report.Progress = split[1]
