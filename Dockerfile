@@ -18,19 +18,24 @@ FROM vilsol/ffmpeg-alpine as ffmpeg
 
 FROM alpine:edge
 
+# ffmpeg
+COPY --from=build /root/bin/ffmpeg /bin/ffmpeg
+COPY --from=build /root/bin/ffprobe /bin/ffprobe
+
+# x265
+COPY --from=build /usr/local/ /usr/local/
+
 RUN apk add --no-cache \
 	libtheora \
 	libvorbis \
 	x264-libs \
-	x265 \
 	fdk-aac \
 	lame \
 	opus \
 	libvpx \
+	libstdc++ \
+	numactl \
 	nasm
-
-COPY --from=ffmpeg /root/bin/ffmpeg /bin/ffmpeg
-COPY --from=ffmpeg /root/bin/ffprobe /bin/ffprobe
 
 COPY --from=builder /transcoder /transcoder
 
