@@ -10,12 +10,17 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"io/ioutil"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 )
+
+// TODO Make Configurable
+const outputFileExtension = ".mkv"
 
 var terminated bool
 
@@ -69,33 +74,7 @@ var rootCmd = &cobra.Command{
 				return
 			}
 
-			ext := filepath.Ext(fileName)
-
-			valid := false
-			for _, extension := range viper.GetStringSlice("extensions") {
-				if ext == extension {
-					valid = true
-					break
-				}
-			}
-
-			if !valid {
-				continue
-			}
-
-			lastDot := strings.LastIndex(fileName, ".")
-			extCorrectedOriginal := fileName[:lastDot] + ".mkv"
-
-			processedFileName := filepath.Dir(extCorrectedOriginal) + "/." + filepath.Base(extCorrectedOriginal) + ".processed"
-
-			stat, err := os.Stat(processedFileName)
-
-			if err != nil && !os.IsNotExist(err) {
-				log.Errorf("Error reading file %s: %s", processedFileName, err)
-				continue
-			}
-
-			if stat != nil {
+			if !shouldTranscode(fileName) {
 				// File already processed
 				continue
 			}
@@ -105,7 +84,7 @@ var rootCmd = &cobra.Command{
 
 			tempFileName := fileName + ".transcode-temp"
 
-			_, err = os.Stat(tempFileName)
+			_, err := os.Stat(tempFileName)
 
 			if err != nil && !os.IsNotExist(err) {
 				log.Errorf("Error reading file %s: %s", tempFileName, err)
@@ -124,14 +103,11 @@ var rootCmd = &cobra.Command{
 				continue
 			}
 
-			f, err := os.Create(processedFileName)
+			lastDot := strings.LastIndex(fileName, ".")
+			extCorrectedOriginal := fileName[:lastDot] + outputFileExtension
+			processedFileName := filepath.Dir(extCorrectedOriginal) + "/." + filepath.Base(extCorrectedOriginal) + ".processed"
 
-			if err != nil {
-				log.Errorf("Error writing file %s: %s", processedFileName, err)
-				continue
-			}
-
-			_ = f.Close()
+			updateProcessedFile(tempFileName, processedFileName)
 
 			if killed {
 				// Assume corrupted output file
@@ -230,6 +206,7 @@ func init() {
 	rootCmd.PersistentFlags().Bool("stderr", false, "Whether to output ffmpeg stderr stream")
 	rootCmd.PersistentFlags().Bool("keep-old", true, "Keep old version of video if transcoded version is larger")
 	rootCmd.PersistentFlags().Bool("early-exit", true, "Early exit if transcoded version is larger than original (requires keep-old)")
+	rootCmd.PersistentFlags().Bool("nice", true, "Whether to lower the priority of ffmpeg process")
 
 	rootCmd.PersistentFlags().String("tg-bot-key", "", "Telegram Bot API Key")
 	rootCmd.PersistentFlags().Int64("tg-chat-id", 0, "Telegram Bot Chat ID")
@@ -240,7 +217,120 @@ func init() {
 	_ = viper.BindPFlag("stderr", rootCmd.PersistentFlags().Lookup("stderr"))
 	_ = viper.BindPFlag("keep-old", rootCmd.PersistentFlags().Lookup("keep-old"))
 	_ = viper.BindPFlag("early-exit", rootCmd.PersistentFlags().Lookup("early-exit"))
+	_ = viper.BindPFlag("nice", rootCmd.PersistentFlags().Lookup("nice"))
 
 	_ = viper.BindPFlag("tg-bot-key", rootCmd.PersistentFlags().Lookup("tg-bot-key"))
 	_ = viper.BindPFlag("tg-chat-id", rootCmd.PersistentFlags().Lookup("tg-chat-id"))
+}
+
+func shouldTranscode(fileName string) bool {
+	if terminated {
+		return false
+	}
+
+	ext := filepath.Ext(fileName)
+
+	valid := false
+	for _, extension := range viper.GetStringSlice("extensions") {
+		if ext == extension {
+			valid = true
+			break
+		}
+	}
+
+	if !valid {
+		return false
+	}
+
+	lastDot := strings.LastIndex(fileName, ".")
+	extCorrectedOriginal := fileName[:lastDot] + outputFileExtension
+	processedFileName := filepath.Dir(extCorrectedOriginal) + "/." + filepath.Base(extCorrectedOriginal) + ".processed"
+
+	stat, err := os.Stat(processedFileName)
+
+	if err != nil && !os.IsNotExist(err) {
+		log.Errorf("Error reading file %s: %s", processedFileName, err)
+		return false
+	}
+
+	if stat == nil {
+		// File not transcoded ever
+		return true
+	}
+
+	if stat.Size() == 0 {
+		// File processed using old transcoder, update meta file and skip
+		log.Warningf("Updating processed file with file size from old transcoder: %s", fileName)
+		updateProcessedFile(fileName, processedFileName)
+		return false
+	}
+
+	processedData, err := ioutil.ReadFile(processedFileName)
+
+	if err != nil {
+		log.Errorf("Error reading file %s: %s", processedFileName, err)
+		return false
+	}
+
+	if len(processedData) == 0 {
+		// File processed using old transcoder, update meta file and skip
+		log.Warningf("Updating processed file with file size from old transcoder: %s", fileName)
+		updateProcessedFile(fileName, processedFileName)
+		return false
+	}
+
+	parsed, err := strconv.ParseInt(string(processedData), 10, 64)
+
+	if err != nil {
+		log.Errorf("Error parsing %s: %s", string(processedData), err)
+		return false
+	}
+
+	originalStat, err := os.Stat(fileName)
+
+	if err != nil {
+		log.Errorf("Error reading file %s: %s", fileName, err)
+		return false
+	}
+
+	if parsed == originalStat.Size() {
+		return false
+	}
+
+	if !deleteProcessedFile(processedFileName) {
+		return false
+	}
+
+	return true
+}
+
+func updateProcessedFile(fileName string, processedFileName string) {
+	if !deleteProcessedFile(processedFileName) {
+		return
+	}
+
+	originalStat, err := os.Stat(fileName)
+
+	if err != nil {
+		log.Errorf("Error reading file %s: %s", fileName, err)
+		return
+	}
+
+	err = ioutil.WriteFile(processedFileName, []byte(strconv.FormatInt(originalStat.Size(), 10)), 0644)
+
+	if err != nil {
+		log.Errorf("Error writing file %s: %s", processedFileName, err)
+		return
+	}
+}
+
+func deleteProcessedFile(processedFileName string) bool {
+	err := os.Remove(processedFileName)
+
+	if err != nil && !os.IsNotExist(err) {
+		log.Errorf("Error deleting file %s: %s", processedFileName, err)
+		return false
+	}
+
+	return true
 }

@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -20,6 +21,10 @@ var lastReport *models.ProgressReport
 
 func BuildFlags(fileName string, tempFileName string, metadata *models.FileMetadata) []string {
 	finalFlags := make([]string, 0)
+
+	if viper.GetBool("nice") && runtime.GOOS == "linux" {
+		finalFlags = append(finalFlags, "ffmpeg")
+	}
 
 	// The input file
 	finalFlags = append(finalFlags, "-y", "-i", fileName)
@@ -72,7 +77,12 @@ func TranscodeFile(fileName string, tempFileName string, metadata *models.FileMe
 
 	log.Tracef("Executing ffmpeg %s", strings.Join(flags, " "))
 
-	c := exec.Command("ffmpeg", flags...)
+	var c *exec.Cmd
+	if viper.GetBool("nice") && runtime.GOOS == "linux" {
+		c = exec.Command("nice", flags...)
+	} else {
+		c = exec.Command("ffmpeg", flags...)
+	}
 
 	done := make(chan bool, 2)
 	stopTranscoder := make(chan bool, 2)
