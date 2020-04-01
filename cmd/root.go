@@ -11,6 +11,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io/ioutil"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -197,6 +199,10 @@ func Execute() {
 }
 
 func init() {
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+
 	rootCmd.PersistentFlags().StringVar(&LogLevel, "log", "info", "The log level to output")
 	rootCmd.PersistentFlags().BoolVar(&ForceColors, "colors", false, "Force output with colors")
 

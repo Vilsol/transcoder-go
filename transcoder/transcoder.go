@@ -129,7 +129,11 @@ func ReadOut(pipe io.ReadCloser, filename string, metadata *models.FileMetadata,
 	line := make([]byte, 0)
 	for {
 		buffer := make([]byte, 1)
-		_, err := pipe.Read(buffer)
+		readCount, err := pipe.Read(buffer)
+
+		if readCount == 0 {
+			break
+		}
 
 		if buffer[0] != '\n' {
 			line = append(line, buffer[0])
@@ -170,11 +174,21 @@ func ReadOut(pipe io.ReadCloser, filename string, metadata *models.FileMetadata,
 func ReadError(pipe io.ReadCloser) {
 	for {
 		buffer := make([]byte, 1)
-		_, err := pipe.Read(buffer)
-		os.Stderr.Write(buffer)
+		readCount, err := pipe.Read(buffer)
+
+		if readCount == 0 {
+			break
+		}
 
 		if err != nil && err != io.EOF && err != os.ErrClosed && !strings.HasSuffix(err.Error(), "file already closed") {
 			log.Errorf("Error reading stderr: %s", err)
+			return
+		}
+
+		_, err = os.Stderr.Write(buffer)
+
+		if err != nil {
+			log.Errorf("Error writing to stderr: %s", err)
 			return
 		}
 	}
