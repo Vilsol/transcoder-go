@@ -7,6 +7,7 @@ import (
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"strconv"
 	"time"
 )
 
@@ -14,7 +15,7 @@ var tgBot *tgbotapi.BotAPI
 
 func init() {
 	initialize = append(initialize, func() {
-		if viper.GetString("tg-bot-key") != "" && viper.GetInt64("tg-chat-id") != 0 {
+		if viper.GetString("tg-bot-key") != "" && viper.GetString("tg-chat-id") != "" {
 			var err error
 			tgBot, err = tgbotapi.NewBotAPI(viper.GetString("tg-bot-key"))
 
@@ -28,8 +29,24 @@ func init() {
 
 			lastMessage := int64(0)
 
+			chatIdStr := viper.GetString("tg-chat-id")
+
+			chatId, err := strconv.ParseInt(chatIdStr, 10, 64)
+
+			if err != nil {
+				chat, err := tgBot.GetChat(tgbotapi.ChatConfig{
+					SuperGroupUsername: chatIdStr,
+				})
+
+				if err != nil {
+					log.Fatalf("Chat not found: %s", chatIdStr)
+				}
+
+				chatId = chat.ID
+			}
+
 			start = append(start, func(data *models.NotificationData) {
-				message := tgbotapi.NewMessage(viper.GetInt64("tg-chat-id"), generateTelegramMessageText(data, nil))
+				message := tgbotapi.NewMessage(chatId, generateTelegramMessageText(data, nil))
 				message.ParseMode = tgbotapi.ModeMarkdown
 				send, err := tgBot.Send(message)
 
@@ -49,7 +66,7 @@ func init() {
 				}
 
 				if currentMessage != nil {
-					message := tgbotapi.NewEditMessageText(viper.GetInt64("tg-chat-id"), currentMessage.MessageID, generateTelegramMessageText(data, nil))
+					message := tgbotapi.NewEditMessageText(chatId, currentMessage.MessageID, generateTelegramMessageText(data, nil))
 					message.ParseMode = tgbotapi.ModeMarkdown
 					_, err := tgBot.Send(message)
 
@@ -63,7 +80,7 @@ func init() {
 
 			end = append(end, func(data *models.NotificationData, result models.Result) {
 				if currentMessage != nil {
-					message := tgbotapi.NewEditMessageText(viper.GetInt64("tg-chat-id"), currentMessage.MessageID, generateTelegramMessageText(data, &result))
+					message := tgbotapi.NewEditMessageText(chatId, currentMessage.MessageID, generateTelegramMessageText(data, &result))
 					message.ParseMode = tgbotapi.ModeMarkdown
 					_, err := tgBot.Send(message)
 

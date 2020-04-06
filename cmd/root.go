@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"github.com/Vilsol/transcoder-go/config"
 	"github.com/Vilsol/transcoder-go/models"
 	"github.com/Vilsol/transcoder-go/notifications"
@@ -49,15 +48,17 @@ var rootCmd = &cobra.Command{
 		config.InitializeConfig()
 		notifications.InitializeNotifications()
 	},
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			return errors.New("must supply at least a single path")
-		}
-
-		return nil
-	},
 	Run: func(cmd *cobra.Command, args []string) {
 		fileList := make([]string, 0)
+
+		if len(args) == 0 {
+			args = viper.GetStringSlice("paths")
+		}
+
+		if len(args) == 0 {
+			log.Fatalf("You must supply at least a single path via CLI argument or PATHS env variable")
+			return
+		}
 
 		for _, arg := range args {
 			files, err := filepath.Glob(arg)
@@ -69,6 +70,10 @@ var rootCmd = &cobra.Command{
 			log.Tracef("Found %s: %d", arg, len(files))
 
 			fileList = append(fileList, files...)
+		}
+
+		if len(fileList) == 0 {
+			log.Error("Specified paths did not match any files")
 		}
 
 		for _, fileName := range fileList {
@@ -215,7 +220,7 @@ func init() {
 	rootCmd.PersistentFlags().Bool("nice", true, "Whether to lower the priority of ffmpeg process")
 
 	rootCmd.PersistentFlags().String("tg-bot-key", "", "Telegram Bot API Key")
-	rootCmd.PersistentFlags().Int64("tg-chat-id", 0, "Telegram Bot Chat ID")
+	rootCmd.PersistentFlags().String("tg-chat-id", "", "Telegram Bot Chat ID")
 
 	_ = viper.BindPFlag("flags", rootCmd.PersistentFlags().Lookup("flags"))
 	_ = viper.BindPFlag("extensions", rootCmd.PersistentFlags().Lookup("extensions"))

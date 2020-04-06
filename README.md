@@ -15,7 +15,8 @@ Flags:
       --interval int         How often to output transcoding status (default 5)
       --keep-old             Keep old version of video if transcoded version is larger (default true)
       --log string           The log level to output (default "info")
+      --nice                 Whether to lower the priority of ffmpeg process (default true)
       --stderr               Whether to output ffmpeg stderr stream
       --tg-bot-key string    Telegram Bot API Key
-      --tg-chat-id int       Telegram Bot Chat ID
+      --tg-chat-id string    Telegram Bot Chat ID
 ```
