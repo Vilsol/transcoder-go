@@ -20,6 +20,8 @@ var end []End
 var started time.Time
 var currentFileMetadata *models.FileMetadata
 
+var skipChan chan bool
+
 func InitializeNotifications() {
 	for _, f := range initialize {
 		f()
@@ -101,4 +103,8 @@ func generateUpdatedNotificationData(report *models.ProgressReport) *models.Noti
 	}
 
 	return &data
+}
+
+func SetSkipChannel(skip chan bool) {
+	skipChan = skip
 }

@@ -70,7 +70,7 @@ func BuildFlags(fileName string, tempFileName string, metadata *models.FileMetad
 	return finalFlags
 }
 
-func TranscodeFile(fileName string, tempFileName string, metadata *models.FileMetadata) (bool, *models.ProgressReport) {
+func TranscodeFile(fileName string, tempFileName string, metadata *models.FileMetadata, skip chan bool) (bool, *models.ProgressReport, bool) {
 	flags := BuildFlags(fileName, tempFileName, metadata)
 
 	notifications.NotifyStart(metadata)
@@ -112,6 +112,12 @@ func TranscodeFile(fileName string, tempFileName string, metadata *models.FileMe
 
 	go ReadOut(outPipe, fileName, metadata, stopTranscoder)
 
+	skipping := false
+	go func() {
+		skipping = <-skip
+		stopTranscoder <- true
+	}()
+
 	err = c.Wait()
 
 	if err != nil {
@@ -120,7 +126,7 @@ func TranscodeFile(fileName string, tempFileName string, metadata *models.FileMe
 
 	stopTranscoder <- false
 
-	return <-done, lastReport
+	return <-done, lastReport, skipping
 }
 
 func ReadOut(pipe io.ReadCloser, filename string, metadata *models.FileMetadata, stopTranscoder chan bool) {
@@ -194,7 +200,7 @@ func ReadError(pipe io.ReadCloser) {
 	}
 }
 
-var flatParseRegex = regexp.MustCompile("\\s*(-?[0-9.]+).*")
+var flatParseRegex = regexp.MustCompile(`\s*(-?[0-9.]+).*`)
 
 func OutputToReport(lines []string) *models.ProgressReport {
 	report := models.ProgressReport{}

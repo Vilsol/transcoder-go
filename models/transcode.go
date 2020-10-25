@@ -48,6 +48,7 @@ const (
 	ResultKeepOriginal = Result("Kept original")
 	ResultReplaced     = Result("Replaced with new")
 	ResultError        = Result("Error")
+	ResultSkipped      = Result("Skipped, kept original")
 )
 
 func (format Format) SizeInt() int64 {

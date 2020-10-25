@@ -76,6 +76,9 @@ var rootCmd = &cobra.Command{
 			log.Error("Specified paths did not match any files")
 		}
 
+		skip := make(chan bool, 1)
+		notifications.SetSkipChannel(skip)
+
 		for _, fileName := range fileList {
 			if terminated {
 				return
@@ -103,7 +106,7 @@ var rootCmd = &cobra.Command{
 				continue
 			}
 
-			killed, lastReport := transcoder.TranscodeFile(fileName, tempFileName, metadata)
+			killed, lastReport, skipped := transcoder.TranscodeFile(fileName, tempFileName, metadata, skip)
 
 			if terminated {
 				notifications.NotifyEnd(nil, nil, models.ResultError)
@@ -116,7 +119,7 @@ var rootCmd = &cobra.Command{
 
 			updateProcessedFile(tempFileName, processedFileName)
 
-			if killed {
+			if killed && !skipped {
 				// Assume corrupted output file
 				err := os.Remove(tempFileName)
 
@@ -141,13 +144,30 @@ var rootCmd = &cobra.Command{
 				continue
 			}
 
+			if skipped {
+				updateProcessedFile(fileName, processedFileName)
+
+				// Transcoded file was skipped
+				err := os.Remove(tempFileName)
+
+				if err != nil && !os.IsNotExist(err) {
+					log.Errorf("Error deleting file %s: %s", tempFileName, err)
+					continue
+				}
+
+				log.Infof("Skipped, kept original: %s", fileName)
+				notifications.NotifyEnd(nil, lastReport, models.ResultSkipped)
+
+				continue
+			}
+
 			resultMetadata := transcoder.ReadFileMetadata(tempFileName)
 
 			if viper.GetBool("keep-old") && resultMetadata.Format.SizeInt() > metadata.Format.SizeInt() {
 				// Transcoded file is bigger than original
 				err := os.Remove(tempFileName)
 
-				if err != nil {
+				if err != nil && !os.IsNotExist(err) {
 					log.Errorf("Error deleting file %s: %s", tempFileName, err)
 					continue
 				}
@@ -221,6 +241,7 @@ func init() {
 
 	rootCmd.PersistentFlags().String("tg-bot-key", "", "Telegram Bot API Key")
 	rootCmd.PersistentFlags().String("tg-chat-id", "", "Telegram Bot Chat ID")
+	rootCmd.PersistentFlags().Int("tg-admin-id", 0, "Telegram Admin User ID")
 
 	_ = viper.BindPFlag("flags", rootCmd.PersistentFlags().Lookup("flags"))
 	_ = viper.BindPFlag("extensions", rootCmd.PersistentFlags().Lookup("extensions"))
@@ -232,6 +253,7 @@ func init() {
 
 	_ = viper.BindPFlag("tg-bot-key", rootCmd.PersistentFlags().Lookup("tg-bot-key"))
 	_ = viper.BindPFlag("tg-chat-id", rootCmd.PersistentFlags().Lookup("tg-chat-id"))
+	_ = viper.BindPFlag("tg-admin-id", rootCmd.PersistentFlags().Lookup("tg-admin-id"))
 }
 
 func shouldTranscode(fileName string) bool {
@@ -321,6 +343,10 @@ func updateProcessedFile(fileName string, processedFileName string) {
 	}
 
 	originalStat, err := os.Stat(fileName)
+
+	if os.IsNotExist(err) {
+		return
+	}
 
 	if err != nil {
 		log.Errorf("Error reading file %s: %s", fileName, err)

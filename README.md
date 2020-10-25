@@ -17,6 +17,7 @@ Flags:
       --log string           The log level to output (default "info")
       --nice                 Whether to lower the priority of ffmpeg process (default true)
       --stderr               Whether to output ffmpeg stderr stream
+      --tg-admin-id int      Telegram Admin User ID
       --tg-bot-key string    Telegram Bot API Key
       --tg-chat-id string    Telegram Bot Chat ID
 ```
