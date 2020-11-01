@@ -120,6 +120,10 @@ var rootCmd = &cobra.Command{
 			updateProcessedFile(tempFileName, processedFileName)
 
 			if killed && !skipped {
+				if !terminated {
+					updateProcessedFile(fileName, processedFileName)
+				}
+
 				// Assume corrupted output file
 				err := os.Remove(tempFileName)
 
@@ -166,6 +170,8 @@ var rootCmd = &cobra.Command{
 			if viper.GetBool("keep-old") && resultMetadata.Format.SizeInt() > metadata.Format.SizeInt() {
 				// Transcoded file is bigger than original
 				err := os.Remove(tempFileName)
+
+				updateProcessedFile(fileName, processedFileName)
 
 				if err != nil && !os.IsNotExist(err) {
 					log.Errorf("Error deleting file %s: %s", tempFileName, err)
