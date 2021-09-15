@@ -90,11 +90,16 @@ var rootCmd = &cobra.Command{
 			}
 
 			log.Infof("Transcoding: %s", fileName)
-			metadata := transcoder.ReadFileMetadata(fileName)
+			metadata, err := transcoder.ReadFileMetadata(fileName)
+
+			if err != nil {
+				log.Infof("failed reading metadata: %s", err)
+				continue
+			}
 
 			tempFileName := fileName + ".transcode-temp"
 
-			_, err := os.Stat(tempFileName)
+			_, err = os.Stat(tempFileName)
 
 			if err != nil && !os.IsNotExist(err) {
 				log.Errorf("Error reading file %s: %s", tempFileName, err)
@@ -165,7 +170,12 @@ var rootCmd = &cobra.Command{
 				continue
 			}
 
-			resultMetadata := transcoder.ReadFileMetadata(tempFileName)
+			resultMetadata, err := transcoder.ReadFileMetadata(tempFileName)
+			if err != nil {
+				log.Infof("failed reading metadata: %s", err)
+				notifications.NotifyEnd(nil, lastReport, models.ResultError)
+				continue
+			}
 
 			if viper.GetBool("keep-old") && resultMetadata.Format.SizeInt() > metadata.Format.SizeInt() {
 				// Transcoded file is bigger than original
