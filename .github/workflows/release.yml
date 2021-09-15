@@ -13,9 +13,6 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
       - name: Set up Go
         uses: actions/setup-go@v1
