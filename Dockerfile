@@ -1,4 +1,4 @@
-FROM ghcr.io/vilsol/ffmpeg-alpine:latest as ffmpeg
+FROM ghcr.io/vilsol/ffmpeg-alpine:latest@sha256:1bc053b7b5148efea76a6f4ace36247e80e470f24e70ba65e75cfe2d24842ff1 as ffmpeg
 
 FROM alpine:edge
 
