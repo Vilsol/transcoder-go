@@ -216,7 +216,9 @@ func OutputToReport(lines []string) *models.ProgressReport {
 			break
 		case "bitrate":
 			matches := flatParseRegex.FindAllStringSubmatch(split[1], -1)
-			report.Bitrate, _ = strconv.ParseFloat(matches[0][1], 64)
+			if len(matches) > 0 {
+				report.Bitrate, _ = strconv.ParseFloat(matches[0][1], 64)
+			}
 			break
 		case "total_size":
 			report.TotalSize, _ = strconv.Atoi(split[1])
