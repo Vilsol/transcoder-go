@@ -3,6 +3,7 @@ module github.com/Vilsol/transcoder-go
 go 1.17
 
 require (
+	github.com/bmatcuk/doublestar/v4 v4.0.2
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.8.1

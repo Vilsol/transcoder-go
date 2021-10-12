@@ -6,6 +6,7 @@ import (
 	"github.com/Vilsol/transcoder-go/notifications"
 	"github.com/Vilsol/transcoder-go/transcoder"
 	"github.com/Vilsol/transcoder-go/utils"
+	"github.com/bmatcuk/doublestar/v4"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -61,7 +62,8 @@ var rootCmd = &cobra.Command{
 		}
 
 		for _, arg := range args {
-			files, err := filepath.Glob(arg)
+			realBasePath, pattern := doublestar.SplitPattern(arg)
+			files, err := doublestar.Glob(os.DirFS(realBasePath), pattern)
 
 			if err != nil {
 				log.Fatal(err)
