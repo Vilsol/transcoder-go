@@ -157,11 +157,13 @@ func generateTelegramMessageText(data *models.NotificationData, result *models.R
 
 	complete := (float64(data.CurrentFrame) / float64(data.OriginalFrames)) * 100
 
+	skipConfidence := 0.0
 	expected := "0b"
 	eta := time.Duration(0)
 	if complete > 0 {
 		expected = utils.BytesHumanReadable(int64(float64(data.CurrentSize*100) / complete))
 		eta = time.Duration((float64(time.Since(data.Started)) / complete) * (100 - complete))
+		skipConfidence = utils.SkipConfidence(data.OriginalSize, data.CurrentSize, complete)
 	}
 
 	return fmt.Sprintf(
@@ -170,12 +172,14 @@ func generateTelegramMessageText(data *models.NotificationData, result *models.R
 			"\n*Status:* Transcoding: %.2f%%"+
 			"\n*Expected Size:* %s"+
 			"\n*ETA:* %s"+
-			"\n*FPS:* %.2f",
+			"\n*FPS:* %.2f"+
+			"\n*Skip Confidence:* %.2f",
 		data.Filename,
 		utils.BytesHumanReadable(int64(data.OriginalSize)), utils.BytesHumanReadable(int64(data.CurrentSize)), diff,
 		complete,
 		expected,
 		eta.Truncate(time.Second),
 		data.FPS,
+		skipConfidence,
 	)
 }

@@ -3,6 +3,7 @@ package transcoder
 import (
 	"github.com/Vilsol/transcoder-go/models"
 	"github.com/Vilsol/transcoder-go/notifications"
+	"github.com/Vilsol/transcoder-go/utils"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"io"
@@ -154,6 +155,27 @@ func ReadOut(pipe io.ReadCloser, filename string, metadata *models.FileMetadata,
 
 				if viper.GetBool("early-exit") && viper.GetBool("keep-old") {
 					if int64(report.TotalSize) > metadata.Format.SizeInt() {
+						stopTranscoder <- true
+						return
+					}
+
+					originalFrames := 0
+					framerate := float64(0)
+					for _, stream := range metadata.Streams {
+						if stream.CodecType == "video" {
+							originalFrames, _ = strconv.Atoi(stream.NumberFrames)
+							framerate = stream.FrameRate()
+							break
+						}
+					}
+
+					if originalFrames == 0 && framerate > 0 {
+						duration, _ := strconv.ParseFloat(metadata.Format.Duration, 64)
+						originalFrames = int(framerate * duration)
+					}
+
+					complete := (float64(report.Frame) / float64(originalFrames)) * 100
+					if utils.SkipConfidence(int(metadata.Format.SizeInt()), report.TotalSize, complete) > 15 {
 						stopTranscoder <- true
 						return
 					}
