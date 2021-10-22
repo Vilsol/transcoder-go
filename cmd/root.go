@@ -71,7 +71,13 @@ var rootCmd = &cobra.Command{
 
 			log.Tracef("Found %s: %d", arg, len(files))
 
-			fileList = append(fileList, files...)
+			for _, file := range files {
+				absPath, err := filepath.Abs(filepath.Join(realBasePath, file))
+				if err != nil {
+					panic(err)
+				}
+				fileList = append(fileList, absPath)
+			}
 		}
 
 		if len(fileList) == 0 {
