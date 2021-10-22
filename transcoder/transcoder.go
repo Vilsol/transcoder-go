@@ -175,9 +175,12 @@ func ReadOut(pipe io.ReadCloser, filename string, metadata *models.FileMetadata,
 					}
 
 					complete := (float64(report.Frame) / float64(originalFrames)) * 100
-					if utils.SkipConfidence(int(metadata.Format.SizeInt()), report.TotalSize, complete) > 15 {
-						stopTranscoder <- true
-						return
+
+					if complete > 25 {
+						if utils.SkipConfidence(int(metadata.Format.SizeInt()), report.TotalSize, complete) > 15 {
+							stopTranscoder <- true
+							return
+						}
 					}
 				}
 
