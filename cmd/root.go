@@ -203,6 +203,23 @@ var rootCmd = &cobra.Command{
 				)
 
 				notifications.NotifyEnd(resultMetadata, nil, models.ResultKeepOriginal)
+			} else if viper.GetBool("keep-old") && utils.SkipConfidenceMeta(metadata, resultMetadata.Frames(), int(resultMetadata.Format.SizeInt())) > viper.GetFloat64("skip-confidence") {
+				// Transcoded file is skipped due to extrapolated data
+				err := os.Remove(tempFileName)
+
+				updateProcessedFile(fileName, processedFileName)
+
+				if err != nil && !os.IsNotExist(err) {
+					log.Errorf("Error deleting file %s: %s", tempFileName, err)
+					continue
+				}
+
+				log.Infof("Kept original %s: Skip confidence of %.2f",
+					fileName,
+					utils.SkipConfidenceMeta(metadata, resultMetadata.Frames(), int(resultMetadata.Format.SizeInt())),
+				)
+
+				notifications.NotifyEnd(resultMetadata, nil, models.ResultKeepOriginal)
 			} else {
 				// Transcoded file is smaller than original
 				err := os.Remove(fileName)
@@ -262,6 +279,7 @@ func init() {
 	rootCmd.PersistentFlags().Bool("keep-old", true, "Keep old version of video if transcoded version is larger")
 	rootCmd.PersistentFlags().Bool("early-exit", true, "Early exit if transcoded version is larger than original (requires keep-old)")
 	rootCmd.PersistentFlags().Bool("nice", true, "Whether to lower the priority of ffmpeg process")
+	rootCmd.PersistentFlags().Float64("skip-confidence", 15, "Skip confidence for early exit")
 
 	rootCmd.PersistentFlags().String("tg-bot-key", "", "Telegram Bot API Key")
 	rootCmd.PersistentFlags().String("tg-chat-id", "", "Telegram Bot Chat ID")
@@ -274,6 +292,7 @@ func init() {
 	_ = viper.BindPFlag("keep-old", rootCmd.PersistentFlags().Lookup("keep-old"))
 	_ = viper.BindPFlag("early-exit", rootCmd.PersistentFlags().Lookup("early-exit"))
 	_ = viper.BindPFlag("nice", rootCmd.PersistentFlags().Lookup("nice"))
+	_ = viper.BindPFlag("skip-confidence", rootCmd.PersistentFlags().Lookup("skip-confidence"))
 
 	_ = viper.BindPFlag("tg-bot-key", rootCmd.PersistentFlags().Lookup("tg-bot-key"))
 	_ = viper.BindPFlag("tg-chat-id", rootCmd.PersistentFlags().Lookup("tg-chat-id"))

@@ -87,3 +87,21 @@ func (report *ProgressReport) Log(filename string) {
 		WithField("speed", report.Speed).
 		Infof("Progress: %s", filename)
 }
+func (m FileMetadata) Frames() int {
+	frames := 0
+	framerate := float64(0)
+	for _, stream := range m.Streams {
+		if stream.CodecType == "video" {
+			frames, _ = strconv.Atoi(stream.NumberFrames)
+			framerate = stream.FrameRate()
+			break
+		}
+	}
+
+	if frames == 0 && framerate > 0 {
+		duration, _ := strconv.ParseFloat(m.Format.Duration, 64)
+		frames = int(framerate * duration)
+	}
+
+	return frames
+}
