@@ -147,11 +147,20 @@ var rootCmd = &cobra.Command{
 
 				if lastReport != nil {
 					if int64(lastReport.TotalSize) > metadata.Format.SizeInt() {
-
 						log.Infof("Kept original %s: %s < %s",
 							fileName,
 							utils.BytesHumanReadable(metadata.Format.SizeInt()),
 							utils.BytesHumanReadable(int64(lastReport.TotalSize)),
+						)
+
+						notifications.NotifyEnd(nil, lastReport, models.ResultKeepOriginal)
+					}
+
+					skipConfidence := utils.SkipConfidenceMeta(metadata, lastReport.Frame, lastReport.TotalSize)
+					if skipConfidence > viper.GetFloat64("skip-confidence") {
+						log.Infof("Kept original %s: Skip confidence of %.2f",
+							fileName,
+							skipConfidence,
 						)
 
 						notifications.NotifyEnd(nil, lastReport, models.ResultKeepOriginal)
