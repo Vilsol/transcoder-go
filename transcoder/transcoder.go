@@ -1,11 +1,6 @@
 package transcoder
 
 import (
-	"github.com/Vilsol/transcoder-go/models"
-	"github.com/Vilsol/transcoder-go/notifications"
-	"github.com/Vilsol/transcoder-go/utils"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"io"
 	"os"
 	"os/exec"
@@ -16,6 +11,12 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/Vilsol/transcoder-go/models"
+	"github.com/Vilsol/transcoder-go/notifications"
+	"github.com/Vilsol/transcoder-go/utils"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 var lastReport *models.ProgressReport
@@ -36,7 +37,7 @@ func BuildFlags(fileName string, tempFileName string, metadata *models.FileMetad
 	}
 
 	// Mandatory flags
-	finalFlags = append(finalFlags, "-c", "copy", "-f", "matroska", "-progress", "-")
+	finalFlags = append(finalFlags, "-c", "copy", "-c:s", "srt", "-f", "matroska", "-progress", "-",)
 
 	// Configurable flags
 	finalFlags = append(finalFlags, strings.Split(viper.GetString("flags"), " ")...)
