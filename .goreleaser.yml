@@ -53,17 +53,34 @@ dockers:
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
-  - goarch: arm64
+    dockerfile: 'dockerfiles/scratch.Dockerfile'
+
+  - goarch: amd64
     use: buildx
     image_templates:
-      - "ghcr.io/vilsol/transcoder-go:{{ .Tag }}-arm64v8"
-      - "ghcr.io/vilsol/transcoder-go:v{{ .Major }}-arm64v8"
-      - "ghcr.io/vilsol/transcoder-go:v{{ .Major }}.{{ .Minor }}-arm64v8"
-      - "ghcr.io/vilsol/transcoder-go:latest-arm64v8"
+      - "ghcr.io/vilsol/transcoder-go:{{ .Tag }}-nvidia"
+      - "ghcr.io/vilsol/transcoder-go:v{{ .Major }}-nvidia"
+      - "ghcr.io/vilsol/transcoder-go:v{{ .Major }}.{{ .Minor }}-nvidia"
+      - "ghcr.io/vilsol/transcoder-go:latest-nvidia"
     build_flag_templates:
       - "--pull"
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--platform=linux/arm64"
+    dockerfile: 'dockerfiles/nvidia.Dockerfile'
+
+  - goarch: amd64
+    use: buildx
+    image_templates:
+      - "ghcr.io/vilsol/transcoder-go:{{ .Tag }}-vaapi"
+      - "ghcr.io/vilsol/transcoder-go:v{{ .Major }}-vaapi"
+      - "ghcr.io/vilsol/transcoder-go:v{{ .Major }}.{{ .Minor }}-vaapi"
+      - "ghcr.io/vilsol/transcoder-go:latest-vaapi"
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+    dockerfile: 'dockerfiles/vaapi.Dockerfile'
