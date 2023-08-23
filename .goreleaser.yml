@@ -84,3 +84,18 @@ dockers:
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
     dockerfile: 'dockerfiles/vaapi.Dockerfile'
+
+  - goarch: amd64
+    use: buildx
+    image_templates:
+      - "ghcr.io/vilsol/transcoder-go:{{ .Tag }}-libvpl"
+      - "ghcr.io/vilsol/transcoder-go:v{{ .Major }}-libvpl"
+      - "ghcr.io/vilsol/transcoder-go:v{{ .Major }}.{{ .Minor }}-libvpl"
+      - "ghcr.io/vilsol/transcoder-go:latest-libvpl"
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+    dockerfile: 'dockerfiles/libvpl.Dockerfile'
